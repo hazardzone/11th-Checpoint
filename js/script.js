@@ -1,67 +1,123 @@
-// Get the product cards and total price container
-const products = document.querySelectorAll(".card");
-const totalPriceElement = document.querySelector(".total");
+// Product class
+class Product {
+  constructor(id, name, price) {
+    this.id = id;
+    this.name = name;
+    this.price = price;
+  }
+}
 
-// Initial total price
-let totalPrice = 0;
+// ShoppingCartItem class
+class ShoppingCartItem {
+  constructor(product, quantity) {
+    this.product = product;
+    this.quantity = quantity;
+  }
 
-// Add event listeners to each product's buttons
-products.forEach((product) => {
-  const plusButton = product.querySelector(".fa-plus-circle");
-  const minusButton = product.querySelector(".fa-minus-circle");
-  const quantityElement = product.querySelector(".quantity");
-  const unitPrice = parseFloat(
-    product.querySelector(".unit-price").innerText.split(" ")[0]
-  );
+  calculateTotalPrice() {
+    return this.product.price * this.quantity;
+  }
+}
 
-  let quantity = 0;
+// ShoppingCart class
+class ShoppingCart {
+  constructor() {
+    this.items = [];
+  }
 
-  // Update the quantity and total price when plus button is clicked
-  plusButton.addEventListener("click", () => {
-    quantity++;
-    quantityElement.innerText = quantity;
-    updateTotalPrice();
-  });
+  getTotalItems() {
+    return this.items.length;
+  }
 
-  // Update the quantity and total price when minus button is clicked
-  minusButton.addEventListener("click", () => {
-    if (quantity > 0) {
-      quantity--;
+  addItem(product, quantity) {
+    const cartItem = new ShoppingCartItem(product, quantity);
+    this.items.push(cartItem);
+  }
+
+  removeItem(productId) {
+    this.items = this.items.filter((item) => item.product.id !== productId);
+  }
+
+  displayCartItems() {
+    this.items.forEach((item) => {
+      console.log(
+        `Product: ${item.product.name}, Quantity: ${
+          item.quantity
+        }, Total Price: ${item.calculateTotalPrice()}`
+      );
+    });
+  }
+
+  getTotalPrice() {
+    return this.items.reduce(
+      (total, item) => total + item.calculateTotalPrice(),
+      0
+    );
+  }
+}
+
+// Instantiate products
+const apple = new Product(1, "Apple", 0.5);
+const banana = new Product(2, "Banana", 0.3);
+
+const cart = new ShoppingCart();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const products = document.querySelectorAll(".card");
+  const totalPriceElement = document.querySelector(".total");
+
+  products.forEach((product) => {
+    const plusButton = product.querySelector(".fa-plus-circle");
+    const minusButton = product.querySelector(".fa-minus-circle");
+    const quantityElement = product.querySelector(".quantity");
+    const unitPrice = parseFloat(
+      product.querySelector(".unit-price").innerText.split(" ")[0]
+    );
+    let quantity = 0;
+
+    plusButton.addEventListener("click", () => {
+      quantity++;
       quantityElement.innerText = quantity;
+      cart.addItem(
+        new Product(product.dataset.id, product.dataset.name, unitPrice),
+        quantity
+      );
       updateTotalPrice();
+    });
+
+    minusButton.addEventListener("click", () => {
+      if (quantity > 0) {
+        quantity--;
+        quantityElement.innerText = quantity;
+        cart.removeItem(product.dataset.id);
+        updateTotalPrice();
+      }
+    });
+
+    function updateTotalPrice() {
+      totalPriceElement.innerText = `${cart.getTotalPrice()} $`;
     }
   });
 
-  // Function to update the total price
-  function updateTotalPrice() {
-    totalPrice = 0;
-    products.forEach((product) => {
-      const quantity = parseInt(product.querySelector(".quantity").innerText);
-      const price = parseFloat(
-        product.querySelector(".unit-price").innerText.split(" ")[0]
-      );
-      totalPrice += quantity * price;
+  const heartIcons = document.querySelectorAll(".fa-heart");
+  const trashIcons = document.querySelectorAll(".fa-trash-alt");
+
+  heartIcons.forEach((icon) => {
+    icon.addEventListener("click", () => {
+      icon.classList.toggle("text-danger");
     });
-    totalPriceElement.innerText = `${totalPrice} $`;
+  });
+
+  trashIcons.forEach((icon) => {
+    icon.addEventListener("click", (e) => {
+      const cardBody = e.target.closest(".card-body");
+      cart.removeItem(cardBody.querySelector(".fa-plus-circle").dataset.id);
+      cardBody.parentElement.remove();
+      updateTotalPrice();
+    });
+  });
+
+  function updateTotalPrice() {
+    totalPriceElement.innerText = `${cart.getTotalPrice()} $`;
   }
-});
-
-// Optional: Add functionality to handle heart and trash icons
-const heartIcons = document.querySelectorAll(".fa-heart");
-const trashIcons = document.querySelectorAll(".fa-trash-alt");
-
-heartIcons.forEach((icon) => {
-  icon.addEventListener("click", () => {
-    // Handle "Add to Wishlist" functionality (e.g., toggle color)
-    icon.classList.toggle("text-danger");
-  });
-});
-
-trashIcons.forEach((icon) => {
-  icon.addEventListener("click", (e) => {
-    // Handle "Remove from Cart" functionality
-    const cardBody = e.target.closest(".card-body");
-    cardBody.parentElement.remove();
-    updateTotalPrice(); // Update total price after removal
-  });
 });
